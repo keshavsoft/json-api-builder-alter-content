@@ -4,6 +4,16 @@ import startFunc from "json-traversal-core";
 import { generate } from "astring";
 
 
+function formatJavaScript(source) {
+    return source
+        .replace(/import\s+\{([^}]+)\}\s+from/g, (_, names) => `import { ${names.trim()} } from`)
+        .replace(/;\n(?=import\b)/g, ";\n")
+        .replace(/;\n(?=(?:const|let|var)\b)/g, ";\n\n")
+        .replace(/;\n(?=export\b)/g, ";\n\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .trimEnd() + "\n";
+}
+
 function resolvePaths(options = {}) {
     const clientRoot = path.resolve(options.clientRoot ?? process.cwd());
     const inputRoot = path.resolve(options.inputRoot ?? path.join(clientRoot, "input"));

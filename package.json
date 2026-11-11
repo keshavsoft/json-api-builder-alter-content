@@ -27,5 +27,15 @@
   "dependencies": {
     "json-traversal-core": "1.2.1",
     "astring": "^1.9.0"
-  }
+  },
+  "license": "MIT",
+  "author": "KeshavSoft",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/keshavsoft/json-api-builder-alter-content.git"
+  },
+  "bugs": {
+    "url": "https://github.com/keshavsoft/json-api-builder-alter-content/issues"
+  },
+  "homepage": "https://github.com/keshavsoft/json-api-builder-alter-content#readme"
 }
