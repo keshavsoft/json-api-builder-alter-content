@@ -11,7 +11,8 @@
   "files": [
     "src",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "docs"
   ],
   "scripts": {
     "check": "node --check ./src/v1/index.js",
@@ -37,5 +38,5 @@
   "bugs": {
     "url": "https://github.com/keshavsoft/json-api-builder-alter-content/issues"
   },
-  "homepage": "https://github.com/keshavsoft/json-api-builder-alter-content#readme"
+  "homepage": "https://keshavsoft.github.io/json-api-builder-alter-content/"
 }
