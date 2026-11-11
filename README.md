@@ -1,4 +1,4 @@
-# @keshavsoft/json-api-builder-alter-content
+# json-api-builder-alter-content
 
 Alter content / hook routes stage extracted from the existing `json-api-builder` V9 implementation.
 
@@ -9,13 +9,13 @@ The implementation is located at `src/v1/index.js`. It is copied/extracted from 
 ## Install
 
 ```bash
-npm install @keshavsoft/json-api-builder-alter-content
+npm install json-api-builder-alter-content
 ```
 
 ## Use
 
 ```js
-import { hookRoutes } from "@keshavsoft/json-api-builder-alter-content";
+import { hookRoutes } from "json-api-builder-alter-content";
 ```
 
 Pass the same options/configuration object used by the original V9 stage.
@@ -37,3 +37,4 @@ npm publish --access public
 ```
 
 This package is prepared locally only. It has not been published to npm or pushed to GitHub.
+

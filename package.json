@@ -1,5 +1,5 @@
 {
-  "name": "@keshavsoft/json-api-builder-alter-content",
+  "name": "json-api-builder-alter-content",
   "version": "1.0.0",
   "description": "Alter content / hook routes stage for JSON API Builder.",
   "type": "module",
