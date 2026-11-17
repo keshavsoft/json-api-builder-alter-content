@@ -6,76 +6,86 @@
 [![GitHub Repository](https://img.shields.io/badge/GitHub-keshavsoft%2Fjson-api-builder-alter-content-181717.svg?style=flat-square&logo=github)](https://github.com/keshavsoft/json-api-builder-alter-content)
 [![Documentation](https://img.shields.io/badge/docs-live_portal-amber.svg?style=flat-square)](https://keshavsoft.github.io/json-api-builder-alter-content/)
 
-> **Stage 4 of 8**: Stage 4: Hierarchical Route Hooking & AST Route Tree Composition
+> **Stage 4 of 8**: Hierarchical Route Hooking & AST Tree Composition via Astring
 
 Part of the modular **[JSON API Builder](https://github.com/keshavsoft/json-api-builder-orchestrator)** ecosystem by [KeshavSoft](https://github.com/keshavsoft).
 
 ---
 
-## The Story
+## 1. The Core Story: Why AST Hooking & Why Astring?
 
-Traverses tree.json, identifies nested parent-child route boundaries, and automatically injects child route imports and Hono mount registrations into parent router files.
+### The Complex Problem of Nested Route Mounting
+In modern modular frameworks like Hono or Express, sub-routers must be mounted into their parent routers:
+- `/api/v1/clinics/routes.js` must be imported and mounted by `/api/v1/routes.js`
+- `/api/v1/routes.js` must be imported and mounted by `/api/routes.js`
+- `/api/routes.js` must be mounted into the top-level application entrypoint.
 
-### The Problem It Solves
-Manually connecting nested API endpoints in large micro-service architectures is tedious and error-prone. Changing a route name often breaks import graphs.
+When generating APIs dynamically from a specification tree, how do you inject these connections into the parent files?
 
-### The Solution
-Inspects the tree structure automatically. For every parent that has sub-routes, it synthesizes the child import (e.g., import v1Routes from './v1/routes.js') and mount call (app.route('/v1', v1Routes)), inserting them into the parent AST.
+### Why String Replacement & Regex Fail
+Most generators attempt to solve this with regex or string replacement:
+```javascript
+// A common anti-pattern in generators:
+content = content.replace("export default app", "import child from './child/routes.js';\napp.route('/child', child);\nexport default app;");
+```
+This is inherently fragile:
+1. **Whitespace & Formatting Sensitivity**: If indentation or trailing semicolons differ, the regex fails to match.
+2. **Order Violation**: Multiple child routes result in scrambled imports placed randomly in the middle of code blocks.
+3. **Duplicate Injections**: Re-running the generator easily duplicates imports and routes, crashing Node.js with syntax errors.
+
+### Why We Avoided Babel (`@babel/traverse`)
+While Babel provides AST manipulation, it requires `@babel/parser`, `@babel/traverse`, `@babel/types`, and `@babel/generator`—a dependency chain exceeding **50 MB** with dozens of transient packages. For a lightweight, high-speed API generation pipeline, Babel's compilation overhead is unnecessary and bloated.
+
+### The Solution: Lightweight ESTree Node Splicing + Astring
+Instead of string manipulation or heavy compilers, **`json-api-builder-alter-content`** creates raw ESTree AST objects in memory and serializes them with **[`astring`](https://github.com/davidbonnet/astring)** (~10 KB, 0 dependencies):
+
+1. **Construct Pure AST Nodes**:
+   - `routeImport()` creates a genuine `ImportDeclaration` node:
+     ```javascript
+     {
+       type: "ImportDeclaration",
+       specifiers: [{ type: "ImportDefaultSpecifier", local: { type: "Identifier", name: "clinicsRoutes" } }],
+       source: { type: "Literal", value: "./clinics/routes.js" }
+     }
+     ```
+   - `routeCall()` creates a genuine `CallExpression` node:
+     ```javascript
+     app.route("/clinics", clinicsRoutes)
+     ```
+2. **Deterministic Array Splicing**:
+   - New import nodes are safely inserted into the parent's `ast.body` right below existing imports.
+   - Mount statements are inserted immediately above `ExportDefaultDeclaration`.
+3. **Zero-Defect Code Generation**:
+   - `astring.generate(ast)` turns the mutated AST array into clean, perfectly formatted JavaScript code.
 
 ---
 
-## Architecture & Pipeline Position
-
-```
-[1. Folders] ──▶ [2. Files] ──▶ [3. Content] ──▶ [4. Hook Routes]
-                                                         │
-[8. Orchestrator] ◀── [7. Validate] ◀── [6. Endpoints] ◀── [5. App]
-```
-
-**This repository implements Stage 4 in isolation.** It can be used independently in custom build workflows or composed automatically via `json-api-builder`.
-
----
-
-## Installation
-
-```bash
-npm install json-api-builder-alter-content
-```
-
----
-
-## Quick Start
-
-```js
-import { hookRoutes } from "json-api-builder-alter-content";
-
-const result = hookRoutes({
-    clientRoot: "./my-project",
-    outputRoot: "./my-project/output"
-});
-
-console.log("Hooked route files count:", result.hookedFiles);
-```
-
----
-
-## Input Specification
-
-Parent directories containing their own routes.js alongside child directories with routes.js.
-
-```json
-// Tree relationship:
-// api/routes.js -> contains child v1/routes.js
-// v1/routes.js  -> contains child clinics/routes.js
-```
-
----
-
-## Output Transformation
-
-Parent router with dynamically wired child imports and Hono route registrations.
+## 2. Architecture & Pipeline Position
 
 ```text
+[0. Validate] ──▶ [1. Folders] ──▶ [2. Files] ──▶ [3. Insert Content] ──▶ [4. Hook Routes (Astring)]
+                                                                                  │
+[8. Finished App] ◀── [7. Verify] ◀── [6. Endpoints] ◀── [5. Create App] ◀────────┘
+```
+
+**Stage 4's Single Responsibility**:
+Reads `source-of-truth/tree.json`, traverses nested route hierarchies, and mutates parent router ASTs to bind all child routers hierarchically.
+
+---
+
+## 3. The Transformation in Action
+
+### Before Stage 4 (Created by Stage 3):
+```javascript
+import { Hono } from "hono";
+
+const app = new Hono();
+
+export default app;
+```
+
+### After Stage 4 (Hooked by AST Splicing & Emitted by Astring):
+```javascript
 import { Hono } from "hono";
 import v1Routes from "./v1/routes.js";
 
@@ -88,52 +98,29 @@ export default app;
 
 ---
 
-## API Reference
-
-### `hookRoutes`
-
-Accepts an options object with the following configuration:
-
-| Option | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `clientRoot` | `string` | `process.cwd()` | Root path of the client project. |
-| `outputRoot` | `string` | `path.join(clientRoot, 'output')` | Target output directory containing generated routes. |
-
----
-
-## Sibling Pipeline Packages
-
-| Stage | Package | Description |
-| :---: | :--- | :--- |
-| **01** | [json-api-builder-create-folders](https://github.com/keshavsoft/json-api-builder-create-folders) | Directory hierarchy scaffolding |
-| **02** | [json-api-builder-create-files](https://github.com/keshavsoft/json-api-builder-create-files) | Non-destructive placeholder file creation |
-| **03** | [json-api-builder-insert-content](https://github.com/keshavsoft/json-api-builder-insert-content) | ESTree template to JavaScript insertion |
-| **04** | [json-api-builder-alter-content](https://github.com/keshavsoft/json-api-builder-alter-content) | Hierarchical route hooking & AST imports |
-| **05** | [json-api-builder-create-app](https://github.com/keshavsoft/json-api-builder-create-app) | Root app.js assembly & server runtime |
-| **06** | [json-api-builder-create-endpoints](https://github.com/keshavsoft/json-api-builder-create-endpoints) | CRUD endpoints & local JSON file sync |
-| **07** | [json-api-builder-validation](https://github.com/keshavsoft/json-api-builder-validation) | Specification linting & artifact checks |
-| **08** | [json-api-builder](https://github.com/keshavsoft/json-api-builder-orchestrator) | Master orchestrator coordinating all stages |
-
----
-
-## Development & Testing
+## 4. Installation & Usage
 
 ```bash
-# Install dependencies
-npm install
+npm install json-api-builder-alter-content
+```
 
-# Run automated tests
-npm test
+```javascript
+import { hookRoutes } from "json-api-builder-alter-content";
 
-# Run syntax check
-npm run check
+const result = hookRoutes({
+    clientRoot: "./my-project",
+    outputRoot: "./my-project/output"
+});
 
-# Prepublish verification
-npm run prepublishOnly
+console.log(`Successfully hooked ${result.hookedFiles} parent routers.`);
 ```
 
 ---
 
-## License
+## 5. Verification & Tests
 
-[MIT](LICENSE) © 2026 [KeshavSoft](https://github.com/keshavsoft)
+To run the built-in syntax checks and unit tests:
+```bash
+npm run check
+npm test
+```
