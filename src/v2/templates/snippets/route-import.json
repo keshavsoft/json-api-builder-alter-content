@@ -1,0 +1,17 @@
+{
+  "type": "ImportDeclaration",
+  "specifiers": [
+    {
+      "type": "ImportDefaultSpecifier",
+      "local": {
+        "type": "Identifier",
+        "name": "__LOCAL_NAME__"
+      }
+    }
+  ],
+  "source": {
+    "type": "Literal",
+    "value": "__IMPORT_PATH__",
+    "raw": "\"__IMPORT_PATH__\""
+  }
+}

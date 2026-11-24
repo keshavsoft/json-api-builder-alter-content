@@ -1,0 +1,36 @@
+{
+  "type": "Program",
+  "sourceType": "module",
+  "body": [
+    {
+      "type": "ImportDeclaration",
+      "specifiers": [
+        {
+          "type": "ImportSpecifier",
+          "imported": { "type": "Identifier", "name": "Hono" },
+          "local": { "type": "Identifier", "name": "Hono" }
+        }
+      ],
+      "source": { "type": "Literal", "value": "hono", "raw": "\"hono\"" }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "const",
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "id": { "type": "Identifier", "name": "app" },
+          "init": {
+            "type": "NewExpression",
+            "callee": { "type": "Identifier", "name": "Hono" },
+            "arguments": []
+          }
+        }
+      ]
+    },
+    {
+      "type": "ExportDefaultDeclaration",
+      "declaration": { "type": "Identifier", "name": "app" }
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "type": "ExpressionStatement",
+  "expression": {
+    "type": "CallExpression",
+    "callee": {
+      "type": "MemberExpression",
+      "computed": false,
+      "object": {
+        "type": "Identifier",
+        "name": "app"
+      },
+      "property": {
+        "type": "Identifier",
+        "name": "route"
+      }
+    },
+    "arguments": [
+      {
+        "type": "Literal",
+        "value": "__ROUTE_PATH__",
+        "raw": "\"__ROUTE_PATH__\""
+      },
+      {
+        "type": "Identifier",
+        "name": "__LOCAL_NAME__"
+      }
+    ],
+    "optional": false
+  }
+}
